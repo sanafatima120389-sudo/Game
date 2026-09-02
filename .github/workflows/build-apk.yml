@@ -8,27 +8,43 @@ on:
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Buildozer
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev automake
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk python3-pip \
+            autoconf libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev \
+            cmake libffi-dev libssl-dev automake
+
+      - name: Install Buildozer
+        run: |
           python -m pip install --upgrade pip
-          python -m pip install --upgrade buildozer cython virtualenv
+          python -m pip install --upgrade buildozer "cython<3.4" virtualenv
 
       - name: Build APK
         env:
           BUILDOZER_WARN_ON_ROOT: "0"
+          APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
         run: |
-          yes | buildozer -v android debug
+          buildozer -v android debug
+
+      - name: Check APK
+        run: |
+          echo "APK files:"
+          ls -lh bin/*.apk
+          file bin/*.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: battle-zone-apk
           path: bin/*.apk
+          if-no-files-found: error
