@@ -6,60 +6,88 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Checkout
+      - name: Checkout project
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Install Linux dependencies
         run: |
           sudo apt-get update
-
           sudo apt-get install -y \
-            git \
-            zip \
-            unzip \
-            openjdk-17-jdk \
-            python3-pip \
+            ant \
             autoconf \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
+            automake \
+            autopoint \
+            ccache \
+            cmake \
+            g++ \
+            gcc \
+            git \
+            lbzip2 \
+            libffi-dev \
+            libltdl-dev \
             libncurses5-dev \
             libncursesw5-dev \
-            cmake \
-            libffi-dev \
             libssl-dev \
-            automake
+            libtool \
+            make \
+            openjdk-17-jdk \
+            patch \
+            pkg-config \
+            python3 \
+            python3-dev \
+            python3-pip \
+            python3-venv \
+            unzip \
+            wget \
+            zip
 
-      - name: Install Buildozer
+      - name: Install Python build tools
         run: |
           python -m pip install --upgrade pip
           python -m pip install --upgrade \
-            buildozer \
+            buildozer==1.6.0 \
             "cython<3.4" \
             virtualenv
 
-      - name: Verify Buildozer configuration
+      - name: Check project files
+        run: |
+          test -f main.py
+          test -f buildozer.spec
+          test -f Battle_Zone_Game_Icon_512.png
+
+      - name: Check Buildozer settings
         run: |
           grep -n "android.accept_sdk_license" buildozer.spec
+          grep -n "android.ndk" buildozer.spec
+          grep -n "android.api" buildozer.spec
+          grep -n "android.archs" buildozer.spec
           grep -n "requirements" buildozer.spec
 
-      - name: Build Android APK
+      - name: Build APK
         env:
           BUILDOZER_WARN_ON_ROOT: "0"
+          P4A_RELEASE: "1"
         run: |
           buildozer -v android debug
 
-      - name: Check APK
+      - name: Verify APK
         run: |
-          echo "===== APK FILES ====="
+          echo "===== APK FILE ====="
+          find bin -maxdepth 1 -type f -name "*.apk" -print
+          test -n "$(find bin -maxdepth 1 -type f -name '*.apk' -print -quit)"
+
+          echo "===== APK SIZE ====="
           ls -lh bin/*.apk
+
           echo "===== APK TYPE ====="
           file bin/*.apk
 
