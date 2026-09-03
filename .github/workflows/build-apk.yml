@@ -1,0 +1,71 @@
+name: Build Battle Zone APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+
+          sudo apt-get install -y \
+            git \
+            zip \
+            unzip \
+            openjdk-17-jdk \
+            python3-pip \
+            autoconf \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            cmake \
+            libffi-dev \
+            libssl-dev \
+            automake
+
+      - name: Install Buildozer
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade \
+            buildozer \
+            "cython<3.4" \
+            virtualenv
+
+      - name: Verify Buildozer configuration
+        run: |
+          grep -n "android.accept_sdk_license" buildozer.spec
+          grep -n "requirements" buildozer.spec
+
+      - name: Build Android APK
+        env:
+          BUILDOZER_WARN_ON_ROOT: "0"
+        run: |
+          buildozer -v android debug
+
+      - name: Check APK
+        run: |
+          echo "===== APK FILES ====="
+          ls -lh bin/*.apk
+          echo "===== APK TYPE ====="
+          file bin/*.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: battle-zone-apk
+          path: bin/*.apk
+          if-no-files-found: error
